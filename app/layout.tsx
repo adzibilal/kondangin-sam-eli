@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import {
   Lexend_Deca,
   Public_Sans,
@@ -32,13 +32,21 @@ const tangerine = Tangerine({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://sam-eli.kondangin.id'),
   title: 'Undangan Pernikahan Sam & Eli',
-  description: 'Kami mengundang Anda untuk berbagi kebahagiaan di hari istimewa pernikahan kami.',
-  keywords: ['undangan pernikahan', 'wedding invitation', 'Sam & Eli', 'pernikahan'],
+  description:
+    'Kami mengundang Anda untuk berbagi kebahagiaan di hari istimewa pernikahan kami.',
+  keywords: [
+    'undangan pernikahan',
+    'wedding invitation',
+    'Sam & Eli',
+    'pernikahan',
+  ],
   authors: [{ name: 'Sam & Eli' }],
   openGraph: {
     title: 'Undangan Pernikahan Sam & Eli',
-    description: 'Kami mengundang Anda untuk berbagi kebahagiaan di hari istimewa pernikahan kami.',
+    description:
+      'Kami mengundang Anda untuk berbagi kebahagiaan di hari istimewa pernikahan kami.',
     type: 'website',
     url: 'https://sam-eli.kondangin.id',
     images: [
@@ -55,7 +63,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Undangan Pernikahan Sam & Eli',
-    description: 'Kami mengundang Anda untuk berbagi kebahagiaan di hari istimewa pernikahan kami.',
+    description:
+      'Kami mengundang Anda untuk berbagi kebahagiaan di hari istimewa pernikahan kami.',
     images: ['/gallery/AND02446.jpg'],
   },
   icons: {
@@ -65,11 +74,12 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({
