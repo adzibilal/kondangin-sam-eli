@@ -1,0 +1,33 @@
+# Dependencies
+node_modules
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+
+# IDE
+.vscode
+.idea
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Other
+public
+*.min.js
+*.min.css
