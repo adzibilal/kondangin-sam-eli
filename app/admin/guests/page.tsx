@@ -1,13 +1,16 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import {
   Plus,
-  Edit, Trash2,
+  Edit,
+  Trash2,
   Copy,
   Send,
   Loader2,
   Search,
+  Upload,
+  Download,
 } from 'lucide-react'
 import { GuestData } from '@/types'
 import GuestModal from '@/components/admin/GuestModal'
@@ -29,6 +32,11 @@ export default function GuestsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [guestToDelete, setGuestToDelete] = useState<GuestData | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Import states
+  const [isImporting, setIsImporting] = useState(false)
+  const [importResults, setImportResults] = useState<any>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchGuests()
@@ -137,21 +145,142 @@ Best regards, Sam & Eli`
     window.open(whatsappUrl, '_blank')
   }
 
+  const handleDownloadTemplate = () => {
+    const csvContent = [
+      ['name', 'session', 'totalGuest', 'whatsapp'],
+      ['John Doe', '1', '2', '628123456789'],
+      ['Jane Smith', '2', '1', '628987654321'],
+    ]
+      .map(row => row.join(','))
+      .join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'guests_template.csv'
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsImporting(true)
+    setImportResults(null)
+
+    try {
+      const text = await file.text()
+      const lines = text.split('\n').filter(line => line.trim())
+      
+      if (lines.length < 2) {
+        alert('CSV file is empty or invalid')
+        return
+      }
+
+      // Parse CSV
+      const headers = lines[0].split(',').map(h => h.trim())
+      const guests = []
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim())
+        const guest: any = {}
+        
+        headers.forEach((header, index) => {
+          guest[header] = values[index] || ''
+        })
+
+        if (guest.name) {
+          guests.push(guest)
+        }
+      }
+
+      if (guests.length === 0) {
+        alert('No valid guests found in CSV')
+        return
+      }
+
+      // Send to API
+      const response = await fetch('/api/admin/guests/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ guests }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setImportResults(data.results)
+        await fetchGuests()
+        alert(
+          `Import completed!\nSuccess: ${data.results.success.length}\nFailed: ${data.results.failed.length}`
+        )
+      } else {
+        alert(`Import failed: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error importing CSV:', error)
+      alert('Error reading CSV file')
+    } finally {
+      setIsImporting(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
   return (
     <div>
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Guests</h1>
-          <p className="text-gray-600">Manage wedding guests and invitations</p>
+          <p className="text-gray-700 font-medium">Manage wedding guests and invitations</p>
         </div>
-        <button
-          onClick={handleAddGuest}
-          className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Guest
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md"
+            title="Download CSV Template"
+          >
+            <Download className="w-5 h-5" />
+            Template
+          </button>
+          <button
+            onClick={handleImportClick}
+            disabled={isImporting}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-sm hover:shadow-md"
+            title="Import from CSV"
+          >
+            {isImporting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Upload className="w-5 h-5" />
+            )}
+            Import CSV
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <button
+            onClick={handleAddGuest}
+            className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium shadow-sm hover:shadow-md"
+          >
+            <Plus className="w-5 h-5" />
+            Add Guest
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -166,7 +295,7 @@ Best regards, Sam & Eli`
                 placeholder="Search guests..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900 placeholder:text-gray-500"
               />
             </div>
           </div>
@@ -175,7 +304,7 @@ Best regards, Sam & Eli`
           <select
             value={sessionFilter}
             onChange={e => setSessionFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900 font-medium"
           >
             <option value="all">All Sessions</option>
             <option value="1">Session 1</option>
@@ -189,33 +318,33 @@ Best regards, Sam & Eli`
         {isLoading ? (
           <div className="text-center py-12">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
-            <p className="text-gray-500">Loading guests...</p>
+            <p className="text-gray-700 font-medium">Loading guests...</p>
           </div>
         ) : filteredGuests.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">No guests found</p>
+            <p className="text-gray-700 font-medium">No guests found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Session
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Total Guests
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     WhatsApp
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Link
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -226,13 +355,13 @@ Best regards, Sam & Eli`
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       {guest.name}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-700">
                       Session {guest.session}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-700">
                       {guest.totalGuest}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-700">
                       {guest.whatsapp || '-'}
                     </td>
                     <td className="px-6 py-4 text-sm">

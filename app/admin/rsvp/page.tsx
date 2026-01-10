@@ -138,25 +138,25 @@ export default function RSVPPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">RSVP Management</h1>
-        <p className="text-gray-600">View and manage guest confirmations</p>
+        <p className="text-gray-700 font-medium">View and manage guest confirmations</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-600 mb-1">Total Responses</p>
+          <p className="text-sm text-gray-700 font-medium mb-1">Total Responses</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-600 mb-1">Attending</p>
+          <p className="text-sm text-gray-700 font-medium mb-1">Attending</p>
           <p className="text-2xl font-bold text-green-600">{stats.attending}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-600 mb-1">Not Attending</p>
+          <p className="text-sm text-gray-700 font-medium mb-1">Not Attending</p>
           <p className="text-2xl font-bold text-red-600">{stats.notAttending}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-600 mb-1">Total Guests Coming</p>
+          <p className="text-sm text-gray-700 font-medium mb-1">Total Guests Coming</p>
           <p className="text-2xl font-bold text-blue-600">{stats.totalGuests}</p>
         </div>
       </div>
@@ -169,7 +169,7 @@ export default function RSVPPage() {
             <select
               value={attendanceFilter}
               onChange={e => setAttendanceFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900 font-medium"
             >
               <option value="all">All Responses</option>
               <option value="yes">Attending</option>
@@ -180,7 +180,7 @@ export default function RSVPPage() {
           <button
             onClick={handleExportCSV}
             disabled={filteredRsvps.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             <Download className="w-4 h-4" />
             Export CSV
@@ -193,33 +193,33 @@ export default function RSVPPage() {
         {isLoading ? (
           <div className="text-center py-12">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
-            <p className="text-gray-500">Loading RSVPs...</p>
+            <p className="text-gray-700 font-medium">Loading RSVPs...</p>
           </div>
         ) : filteredRsvps.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">No RSVPs found</p>
+            <p className="text-gray-700 font-medium">No RSVPs found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Guest Name (From Table)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     RSVP Name (Submitted)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Attendance
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Guest Count
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Submitted At
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -240,24 +240,24 @@ export default function RSVPPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-sm text-gray-700">
                         {rsvp.name}
                       </td>
                     <td className="px-6 py-4 text-sm">
                       <span
-                        className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                        className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${
                           rsvp.attendance === 'yes'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
                         }`}
                       >
                         {rsvp.attendance === 'yes' ? 'Attending' : 'Not Attending'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-700">
                       {rsvp.guestCount}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-700">
                       {formatDate(rsvp.submittedAt)}
                     </td>
                     <td className="px-6 py-4 text-sm text-right">

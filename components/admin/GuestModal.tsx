@@ -114,8 +114,8 @@ export default function GuestModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Name <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Name <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
@@ -123,7 +123,7 @@ export default function GuestModal({
               onChange={e =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900 placeholder:text-gray-500"
               placeholder="Guest name"
               required
               disabled={isLoading}
@@ -132,15 +132,15 @@ export default function GuestModal({
 
           {/* Session */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Session <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Session <span className="text-red-600">*</span>
             </label>
             <select
               value={formData.session}
               onChange={e =>
                 setFormData({ ...formData, session: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900"
               required
               disabled={isLoading}
             >
@@ -151,8 +151,8 @@ export default function GuestModal({
 
           {/* Total Guest */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Total Guests <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Total Guests <span className="text-red-600">*</span>
             </label>
             <input
               type="number"
@@ -161,7 +161,7 @@ export default function GuestModal({
               onChange={e =>
                 setFormData({ ...formData, totalGuest: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900 placeholder:text-gray-500"
               placeholder="Number of guests"
               required
               disabled={isLoading}
@@ -170,7 +170,7 @@ export default function GuestModal({
 
           {/* WhatsApp */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
               WhatsApp Number
             </label>
             <input
@@ -179,7 +179,7 @@ export default function GuestModal({
               onChange={e =>
                 setFormData({ ...formData, whatsapp: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900 placeholder:text-gray-500"
               placeholder="628xxxxxxxxxx"
               disabled={isLoading}
             />
@@ -191,14 +191,14 @@ export default function GuestModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 font-medium text-gray-900"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2 font-medium"
             >
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {isLoading ? 'Saving...' : mode === 'create' ? 'Create' : 'Save'}

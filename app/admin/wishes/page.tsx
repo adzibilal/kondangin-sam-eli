@@ -164,17 +164,17 @@ export default function WishesPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Voice Wishes Management
         </h1>
-        <p className="text-gray-600">Listen and manage voice wishes from guests</p>
+        <p className="text-gray-700 font-medium">Listen and manage voice wishes from guests</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-600 mb-1">Total Wishes</p>
+          <p className="text-sm text-gray-700 font-medium mb-1">Total Wishes</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-600 mb-1">Total Duration</p>
+          <p className="text-sm text-gray-700 font-medium mb-1">Total Duration</p>
           <p className="text-2xl font-bold text-gray-900">
             {formatTotalDuration(stats.totalDuration)}
           </p>
@@ -186,33 +186,33 @@ export default function WishesPage() {
         {isLoading ? (
           <div className="text-center py-12">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
-            <p className="text-gray-500">Loading wishes...</p>
+            <p className="text-gray-700 font-medium">Loading wishes...</p>
           </div>
         ) : wishes.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">No wishes found</p>
+            <p className="text-gray-700 font-medium">No wishes found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Guest Name (From Table)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Wish Name (Submitted)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Duration
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Created At
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Audio
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -233,13 +233,13 @@ export default function WishesPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-sm text-gray-700">
                         {wish.name}
                       </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-700">
                       {wish.duration}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-700">
                       {formatDate(wish.createdAt)}
                     </td>
                     <td className="px-6 py-4 text-sm">
