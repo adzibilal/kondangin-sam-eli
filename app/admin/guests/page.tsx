@@ -11,10 +11,14 @@ import {
   Search,
   Upload,
   Download,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react'
 import { GuestData } from '@/types'
 import GuestModal from '@/components/admin/GuestModal'
 import ConfirmDialog from '@/components/admin/ConfirmDialog'
+import { getInvitationLink, getWhatsAppUrl } from '@/lib/url'
 
 export default function GuestsPage() {
   const [guests, setGuests] = useState<GuestData[]>([])
@@ -22,6 +26,8 @@ export default function GuestsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [sessionFilter, setSessionFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<'name' | 'session' | 'totalGuest'>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -44,7 +50,7 @@ export default function GuestsPage() {
 
   useEffect(() => {
     filterGuests()
-  }, [guests, searchTerm, sessionFilter])
+  }, [guests, searchTerm, sessionFilter, sortBy, sortOrder])
 
   const fetchGuests = async () => {
     setIsLoading(true)
@@ -76,7 +82,57 @@ export default function GuestsPage() {
       )
     }
 
+    // Sorting
+    filtered.sort((a, b) => {
+      let compareA: any
+      let compareB: any
+
+      switch (sortBy) {
+        case 'name':
+          compareA = a.name.toLowerCase()
+          compareB = b.name.toLowerCase()
+          break
+        case 'session':
+          compareA = a.session
+          compareB = b.session
+          break
+        case 'totalGuest':
+          compareA = a.totalGuest
+          compareB = b.totalGuest
+          break
+        default:
+          compareA = a.name.toLowerCase()
+          compareB = b.name.toLowerCase()
+      }
+
+      if (compareA < compareB) return sortOrder === 'asc' ? -1 : 1
+      if (compareA > compareB) return sortOrder === 'asc' ? 1 : -1
+      return 0
+    })
+
     setFilteredGuests(filtered)
+  }
+
+  const handleSort = (field: 'name' | 'session' | 'totalGuest') => {
+    if (sortBy === field) {
+      // Toggle sort order if clicking the same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      // Set new field and default to ascending
+      setSortBy(field)
+      setSortOrder('asc')
+    }
+  }
+
+  const SortIcon = ({ field }: { field: 'name' | 'session' | 'totalGuest' }) => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="w-4 h-4 text-gray-400" />
+    }
+    return sortOrder === 'asc' ? (
+      <ArrowUp className="w-4 h-4 text-gray-700" />
+    ) : (
+      <ArrowDown className="w-4 h-4 text-gray-700" />
+    )
   }
 
   const handleAddGuest = () => {
@@ -117,31 +173,16 @@ export default function GuestsPage() {
   }
 
   const handleCopyLink = (guest: GuestData) => {
-    const baseUrl = window.location.origin
-    const link = `${baseUrl}/?guest=${guest.slug}`
+    const link = getInvitationLink(guest.slug)
     
     navigator.clipboard.writeText(link)
     alert('Link copied to clipboard!')
   }
 
   const handleSendWhatsApp = (guest: GuestData) => {
-    const baseUrl = window.location.origin
-    const link = `${baseUrl}/?guest=${guest.slug}`
-    const message = `The Wedding of Sam & Eli 
-
-Dear ${guest.name},
-
-You are invited! Dengan penuh sukacita, kami mengundang kamu untuk hadir di hari bahagia kami.
-
-Akses undangan digital kami di sini untuk info lengkapnya:
-
-${link}
-
-Terima kasih atas doa dan dukungannya. We look forward to celebrating with you!
-
-Best regards, Sam & Eli`
-
-    const whatsappUrl = `https://wa.me/${guest.whatsapp}?text=${encodeURIComponent(message)}`
+    if (!guest.whatsapp) return
+    
+    const whatsappUrl = getWhatsAppUrl(guest.whatsapp, guest.name, guest.slug)
     window.open(whatsappUrl, '_blank')
   }
 
@@ -285,31 +326,44 @@ Best regards, Sam & Eli`
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search guests..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900 placeholder:text-gray-500"
-              />
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          <div className="flex flex-col md:flex-row gap-4 flex-1 w-full">
+            {/* Search */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search guests..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900 placeholder:text-gray-500"
+                />
+              </div>
             </div>
+
+            {/* Session Filter */}
+            <select
+              value={sessionFilter}
+              onChange={e => setSessionFilter(e.target.value)}
+              className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900 font-medium"
+            >
+              <option value="all">All Sessions</option>
+              <option value="1">Session 1</option>
+              <option value="2">Session 2</option>
+            </select>
           </div>
 
-          {/* Session Filter */}
-          <select
-            value={sessionFilter}
-            onChange={e => setSessionFilter(e.target.value)}
-            className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none text-gray-900 font-medium"
-          >
-            <option value="all">All Sessions</option>
-            <option value="1">Session 1</option>
-            <option value="2">Session 2</option>
-          </select>
+          {/* Sort Info */}
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="font-medium">Sorted by:</span>
+            <span className="text-gray-900 font-semibold">
+              {sortBy === 'name' ? 'Name' : sortBy === 'session' ? 'Session' : 'Total Guests'}
+            </span>
+            <span className="text-gray-500">
+              ({sortOrder === 'asc' ? 'A-Z' : 'Z-A'})
+            </span>
+          </div>
         </div>
       </div>
 
@@ -329,14 +383,32 @@ Best regards, Sam & Eli`
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    Name
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('name')}
+                      className="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider hover:text-gray-900 transition-colors"
+                    >
+                      Name
+                      <SortIcon field="name" />
+                    </button>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    Session
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('session')}
+                      className="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider hover:text-gray-900 transition-colors"
+                    >
+                      Session
+                      <SortIcon field="session" />
+                    </button>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    Total Guests
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      onClick={() => handleSort('totalGuest')}
+                      className="flex items-center gap-2 text-xs font-bold text-gray-700 uppercase tracking-wider hover:text-gray-900 transition-colors"
+                    >
+                      Total Guests
+                      <SortIcon field="totalGuest" />
+                    </button>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     WhatsApp
