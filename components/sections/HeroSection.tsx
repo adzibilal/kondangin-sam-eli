@@ -167,8 +167,8 @@ export default function HeroSection() {
               </div>
               <div className="font-public-sans mb-8">
                 {isLoadingGuest ? (
-                  <div className="mb-2 text-2xl font-light md:text-3xl">
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                  <div className="mx-auto mb-2 text-center text-2xl font-light md:text-3xl">
+                    ......
                   </div>
                 ) : (
                   <p className="mb-2 text-2xl font-light md:text-3xl">

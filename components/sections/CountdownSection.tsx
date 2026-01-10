@@ -84,7 +84,7 @@ export default function CountdownSection() {
   }
 
   return (
-    <section className="relative overflow-hidden bg-white pt-20 pb-5">
+    <section className="relative bg-white pt-20 pb-5">
       <div className="mx-auto max-w-2xl">
         {/* Save The Date Title */}
         <div className="relative mb-8 text-center">

@@ -12,7 +12,7 @@ import WishesSection from '@/components/sections/WishesSection'
 export default function Home() {
   return (
     <main
-      className="font-public-sans mx-auto min-h-screen max-w-lg bg-white"
+      className="font-public-sans mx-auto min-h-screen max-w-lg overflow-x-hidden bg-white"
       suppressHydrationWarning
     >
       <Suspense fallback={<div>Loading...</div>}>
