@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 // Event data in JSON format
 const eventsDataSession1 = [
@@ -41,17 +41,53 @@ const eventsDataSession2 = [
 export default function EventDetailsSection() {
   const searchParams = useSearchParams()
   
-  // Parse guest JSON from URL parameter to get session
-  let session = '2'
-  try {
-    const guestParam = searchParams.get('guest')
-    if (guestParam) {
-      const guestData = JSON.parse(decodeURIComponent(guestParam))
-      session = guestData.session?.toString() || '2'
+  // Parse guest slug from URL parameter to get session
+  const [session, setSession] = useState('2')
+  const [isLoadingGuest, setIsLoadingGuest] = useState(true)
+
+  useEffect(() => {
+    const fetchGuestData = async () => {
+      try {
+        const guestSlug = searchParams.get('guest')
+        
+        if (!guestSlug) {
+          setIsLoadingGuest(false)
+          return
+        }
+
+        // Try to fetch by UUID slug first
+        try {
+          const response = await fetch(`/api/guests/${guestSlug}`)
+          if (response.ok) {
+            const data = await response.json()
+            setSession(data.guest.session?.toString() || '2')
+            setIsLoadingGuest(false)
+            return
+          }
+        } catch {
+          // If UUID fetch fails, try legacy JSON format
+        }
+
+        // Fallback: Try parsing as JSON (legacy format)
+        try {
+          const decodedParam = decodeURIComponent(guestSlug)
+          try {
+            const parsed = JSON.parse(decodedParam)
+            setSession(parsed.session?.toString() || '2')
+          } catch {
+            // Plain string or invalid - default to session 2
+            setSession('2')
+          }
+        } catch (error) {
+          console.error('Error parsing guest data:', error)
+        }
+      } finally {
+        setIsLoadingGuest(false)
+      }
     }
-  } catch (error) {
-    console.error('Error parsing guest data:', error)
-  }
+
+    fetchGuestData()
+  }, [searchParams])
   
   const eventsData = session === '1' ? eventsDataSession1 : eventsDataSession2
 

@@ -12,17 +12,53 @@ export default function HeroSection() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const searchParams = useSearchParams()
   
-  // Parse guest JSON from URL parameter
-  let guestName = 'Nama Tamu'
-  try {
-    const guestParam = searchParams.get('guest')
-    if (guestParam) {
-      const guestData = JSON.parse(decodeURIComponent(guestParam))
-      guestName = guestData.name || 'Nama Tamu'
+  // Parse guest slug from URL parameter
+  const [guestName, setGuestName] = useState('Nama Tamu')
+  const [isLoadingGuest, setIsLoadingGuest] = useState(true)
+
+  useEffect(() => {
+    const fetchGuestData = async () => {
+      try {
+        const guestSlug = searchParams.get('guest')
+        
+        if (!guestSlug) {
+          setIsLoadingGuest(false)
+          return
+        }
+
+        // Try to fetch by UUID slug first
+        try {
+          const response = await fetch(`/api/guests/${guestSlug}`)
+          if (response.ok) {
+            const data = await response.json()
+            setGuestName(data.guest.name)
+            setIsLoadingGuest(false)
+            return
+          }
+        } catch {
+          // If UUID fetch fails, try legacy JSON format
+        }
+
+        // Fallback: Try parsing as JSON (legacy format)
+        try {
+          const decodedParam = decodeURIComponent(guestSlug)
+          try {
+            const parsed = JSON.parse(decodedParam)
+            setGuestName(parsed.name || 'Nama Tamu')
+          } catch {
+            // Plain string name
+            setGuestName(decodedParam)
+          }
+        } catch (error) {
+          console.error('Error parsing guest data:', error)
+        }
+      } finally {
+        setIsLoadingGuest(false)
+      }
     }
-  } catch (error) {
-    console.error('Error parsing guest data:', error)
-  }
+
+    fetchGuestData()
+  }, [searchParams])
 
   const handleOpenInvitation = () => {
     setIsAnimating(true)

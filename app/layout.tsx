@@ -91,6 +91,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${lexendDeca.variable} ${publicSans.variable} ${imperialScript.variable} ${tangerine.variable} antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>

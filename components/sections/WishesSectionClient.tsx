@@ -9,25 +9,63 @@ import { WishData } from '@/types'
 export default function WishesSectionClient() {
   const searchParams = useSearchParams()
 
-  // Parse guest JSON from URL parameter
-  let guestName = ''
-  try {
-    const guestParam = searchParams.get('guest')
-    if (guestParam) {
-      const decodedParam = decodeURIComponent(guestParam)
-      
-      // Try to parse as JSON first
+  // Parse guest slug from URL parameter
+  const [guestData, setGuestData] = useState<{
+    name: string
+  } | null>(null)
+  const [isLoadingGuest, setIsLoadingGuest] = useState(true)
+
+  useEffect(() => {
+    const fetchGuestData = async () => {
       try {
-        const guestData = JSON.parse(decodedParam)
-        guestName = guestData.name || ''
-      } catch {
-        // If not JSON, treat as plain string name
-        guestName = decodedParam
+        const guestSlug = searchParams.get('guest')
+        
+        if (!guestSlug) {
+          setIsLoadingGuest(false)
+          return
+        }
+
+        // Try to fetch by UUID slug first
+        try {
+          const response = await fetch(`/api/guests/${guestSlug}`)
+          if (response.ok) {
+            const data = await response.json()
+            setGuestData({
+              name: data.guest.name,
+            })
+            setIsLoadingGuest(false)
+            return
+          }
+        } catch {
+          // If UUID fetch fails, try legacy JSON format
+        }
+
+        // Fallback: Try parsing as JSON (legacy format)
+        try {
+          const decodedParam = decodeURIComponent(guestSlug)
+          try {
+            const parsed = JSON.parse(decodedParam)
+            setGuestData({
+              name: parsed.name || '',
+            })
+          } catch {
+            // Plain string name
+            setGuestData({
+              name: decodedParam,
+            })
+          }
+        } catch (error) {
+          console.error('Error parsing guest data:', error)
+        }
+      } finally {
+        setIsLoadingGuest(false)
       }
     }
-  } catch (error) {
-    console.error('Error parsing guest data:', error)
-  }
+
+    fetchGuestData()
+  }, [searchParams])
+
+  const guestName = guestData?.name || ''
 
   const [voiceWishes, setVoiceWishes] = useState<WishData[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -190,7 +228,7 @@ export default function WishesSectionClient() {
       const audioDuration = formatTime(uploadData.duration || recordingTime)
 
       // Save wish to Firestore
-      const guestParam = searchParams.get('guest') || ''
+      const guestSlug = searchParams.get('guest') || ''
       const wishResponse = await fetch('/api/wishes', {
         method: 'POST',
         headers: {
@@ -200,7 +238,8 @@ export default function WishesSectionClient() {
           name: guestName,
           audioUrl: uploadData.audioUrl,
           duration: audioDuration,
-          guestParam,
+          guestParam: guestSlug,
+          guestSlug: guestSlug,
         }),
       })
 
@@ -276,8 +315,14 @@ export default function WishesSectionClient() {
           </h2>
         </div>
 
-        {/* Success Message */}
-        {success && (
+        {isLoadingGuest ? (
+          <div className="mb-8 rounded-xl border-2 border-dashed border-gray-300 bg-white p-6">
+            <p className="text-center text-gray-500">Loading...</p>
+          </div>
+        ) : (
+          <>
+            {/* Success Message */}
+            {success && (
           <div className="mb-6 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-green-700">
             Ucapan berhasil dikirim! Terima kasih.
           </div>
@@ -348,9 +393,11 @@ export default function WishesSectionClient() {
             >
               {isSubmitting && <Loader2 className="h-5 w-5 animate-spin" />}
               {isSubmitting ? 'Mengirim...' : 'Kirim'}
-            </button>
-          </form>
-        </div>
+              </button>
+            </form>
+          </div>
+          </>
+        )}
 
         {/* Voice Messages List */}
         <div className="space-y-4">

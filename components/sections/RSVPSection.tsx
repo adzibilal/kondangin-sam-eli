@@ -1,34 +1,74 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 
 export default function RSVPSection() {
   const searchParams = useSearchParams()
 
-  // Parse guest JSON from URL parameter
-  let guestName = ''
-  let totalGuests = '1'
-  try {
-    const guestParam = searchParams.get('guest')
-    if (guestParam) {
-      const decodedParam = decodeURIComponent(guestParam)
+  // Parse guest slug from URL parameter
+  const [guestData, setGuestData] = useState<{
+    name: string
+    totalGuest: number
+  } | null>(null)
+  const [isLoadingGuest, setIsLoadingGuest] = useState(true)
 
-      // Try to parse as JSON first
+  useEffect(() => {
+    const fetchGuestData = async () => {
       try {
-        const guestData = JSON.parse(decodedParam)
-        guestName = guestData.name || ''
-        totalGuests = guestData.total_guest?.toString() || '1'
-      } catch {
-        // If not JSON, treat as plain string name
-        guestName = decodedParam
-        totalGuests = '1'
+        const guestSlug = searchParams.get('guest')
+
+        if (!guestSlug) {
+          setIsLoadingGuest(false)
+          return
+        }
+
+        // Try to fetch by UUID slug first
+        try {
+          const response = await fetch(`/api/guests/${guestSlug}`)
+          if (response.ok) {
+            const data = await response.json()
+            setGuestData({
+              name: data.guest.name,
+              totalGuest: data.guest.totalGuest,
+            })
+            setIsLoadingGuest(false)
+            return
+          }
+        } catch {
+          // If UUID fetch fails, try legacy JSON format
+        }
+
+        // Fallback: Try parsing as JSON (legacy format)
+        try {
+          const decodedParam = decodeURIComponent(guestSlug)
+          try {
+            const parsed = JSON.parse(decodedParam)
+            setGuestData({
+              name: parsed.name || '',
+              totalGuest: parsed.total_guest || 1,
+            })
+          } catch {
+            // Plain string name
+            setGuestData({
+              name: decodedParam,
+              totalGuest: 1,
+            })
+          }
+        } catch (error) {
+          console.error('Error parsing guest data:', error)
+        }
+      } finally {
+        setIsLoadingGuest(false)
       }
     }
-  } catch (error) {
-    console.error('Error parsing guest data:', error)
-  }
+
+    fetchGuestData()
+  }, [searchParams])
+
+  const guestName = guestData?.name || ''
+  const totalGuests = guestData?.totalGuest?.toString() || '1'
 
   const [formData, setFormData] = useState({
     attendance: 'yes',
@@ -39,6 +79,35 @@ export default function RSVPSection() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasExistingRSVP, setHasExistingRSVP] = useState(false)
+  const [existingRSVP, setExistingRSVP] = useState<any>(null)
+
+  // Check if user already has RSVP
+  useEffect(() => {
+    const checkExistingRSVP = async () => {
+      const guestSlug = searchParams.get('guest')
+      if (!guestSlug || isLoadingGuest) return
+
+      try {
+        const response = await fetch(`/api/rsvp?guestSlug=${guestSlug}`)
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Existing RSVP data:', data)
+          if (data.hasRSVP) {
+            setHasExistingRSVP(true)
+            setExistingRSVP(data.rsvp)
+            console.log('RSVP attendance:', data.rsvp.attendance)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking existing RSVP:', error)
+      }
+    }
+
+    if (!isLoadingGuest) {
+      checkExistingRSVP()
+    }
+  }, [searchParams, isLoadingGuest])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,7 +115,7 @@ export default function RSVPSection() {
     setError(null)
 
     try {
-      const guestParam = searchParams.get('guest') || ''
+      const guestSlug = searchParams.get('guest') || ''
 
       const response = await fetch('/api/rsvp', {
         method: 'POST',
@@ -57,15 +126,32 @@ export default function RSVPSection() {
           name: guestName || formData.name,
           attendance: formData.attendance,
           guestCount: Number.parseInt(formData.guests) || 1,
-          guestParam,
+          guestParam: guestSlug,
+          guestSlug: guestSlug,
         }),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error('Failed to submit RSVP')
+        if (response.status === 409) {
+          setError('Anda sudah mengirim konfirmasi sebelumnya.')
+          return
+        }
+        throw new Error(data.error || 'Failed to submit RSVP')
       }
 
       setIsSubmitted(true)
+
+      // Immediately fetch updated RSVP to show correct data
+      const checkResponse = await fetch(`/api/rsvp?guestSlug=${guestSlug}`)
+      if (checkResponse.ok) {
+        const checkData = await checkResponse.json()
+        if (checkData.hasRSVP) {
+          setExistingRSVP(checkData.rsvp)
+          setHasExistingRSVP(true)
+        }
+      }
 
       // Reset form after 3 seconds
       setTimeout(() => {
@@ -76,9 +162,9 @@ export default function RSVPSection() {
           name: guestName,
         })
       }, 3000)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error submitting RSVP:', err)
-      setError('Gagal mengirim konfirmasi. Silakan coba lagi.')
+      setError(err.message || 'Gagal mengirim konfirmasi. Silakan coba lagi.')
     } finally {
       setIsLoading(false)
     }
@@ -116,7 +202,49 @@ export default function RSVPSection() {
         </div>
 
         {/* RSVP Form */}
-        {isSubmitted ? (
+        {isLoadingGuest ? (
+          <div className="rounded-lg bg-white py-12 text-center">
+            <p className="text-gray-500">Loading...</p>
+          </div>
+        ) : hasExistingRSVP && !isSubmitted ? (
+          <div className="rounded-lg bg-white py-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+              <svg
+                className="h-8 w-8 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h3 className="mb-2 text-2xl font-semibold text-gray-800">
+              RSVP Sudah Terkirim
+            </h3>
+            <p className="mb-4 text-gray-600">
+              Anda telah mengirim konfirmasi kehadiran sebelumnya.
+            </p>
+            <div className="inline-block rounded-lg bg-gray-50 px-6 py-4 text-left">
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Status:</span>{' '}
+                <span
+                  className={
+                    existingRSVP?.attendance === 'yes'
+                      ? 'font-medium text-green-600'
+                      : 'font-medium text-red-600'
+                  }
+                >
+                  {existingRSVP?.attendance === 'yes' ? 'Hadir' : 'Tidak Hadir'}
+                </span>
+              </p>
+            </div>
+          </div>
+        ) : isSubmitted ? (
           <div className="rounded-lg bg-white py-12 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
               <svg

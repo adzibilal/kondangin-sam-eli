@@ -37,23 +37,24 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, audioUrl, duration, guestParam } = body
+    const { name, audioUrl, duration, guestParam, guestSlug } = body
 
     // Validate required fields
-    if (!name || !audioUrl || !duration) {
+    if (!name || !audioUrl || !duration || !guestSlug) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    // Create wish document
+    // Create wish document (multiple wishes allowed per guest)
     const wishData: Omit<WishData, 'id'> = {
       name,
       audioUrl,
       duration,
       createdAt: Timestamp.now(),
       guestParam: guestParam || '',
+      guestSlug: guestSlug,
     }
 
     const docRef = await addDoc(collection(db, 'wishes'), wishData)
