@@ -42,3 +42,15 @@ export interface WishFormData {
   audioBlob: Blob | null
   duration: string
 }
+
+export interface SettingsData {
+  id?: string
+  key: string
+  value: string
+  description?: string
+  updatedAt?: Timestamp | Date
+}
+
+export interface InvitationMessageSettings {
+  whatsappMessage: string
+}

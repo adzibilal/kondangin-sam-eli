@@ -9,6 +9,7 @@ import {
   MessageSquare,
   LayoutDashboard,
   LogOut,
+  Settings,
 } from 'lucide-react'
 
 export default function AdminNav() {
@@ -30,6 +31,7 @@ export default function AdminNav() {
     { href: '/admin/guests', icon: Users, label: 'Guests' },
     { href: '/admin/rsvp', icon: CheckSquare, label: 'RSVP' },
     { href: '/admin/wishes', icon: MessageSquare, label: 'Wishes' },
+    { href: '/admin/settings', icon: Settings, label: 'Settings' },
   ]
 
   return (

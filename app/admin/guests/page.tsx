@@ -28,6 +28,7 @@ export default function GuestsPage() {
   const [sessionFilter, setSessionFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'name' | 'session' | 'totalGuest'>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [whatsappMessageTemplate, setWhatsappMessageTemplate] = useState<string | undefined>(undefined)
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -46,6 +47,7 @@ export default function GuestsPage() {
 
   useEffect(() => {
     fetchGuests()
+    fetchWhatsAppMessageTemplate()
   }, [])
 
   useEffect(() => {
@@ -62,6 +64,18 @@ export default function GuestsPage() {
       console.error('Error fetching guests:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchWhatsAppMessageTemplate = async () => {
+    try {
+      const response = await fetch('/api/admin/settings/whatsapp_message')
+      if (response.ok) {
+        const data = await response.json()
+        setWhatsappMessageTemplate(data.value)
+      }
+    } catch (error) {
+      console.error('Error fetching WhatsApp template:', error)
     }
   }
 
@@ -182,7 +196,7 @@ export default function GuestsPage() {
   const handleSendWhatsApp = (guest: GuestData) => {
     if (!guest.whatsapp) return
     
-    const whatsappUrl = getWhatsAppUrl(guest.whatsapp, guest.name, guest.slug)
+    const whatsappUrl = getWhatsAppUrl(guest.whatsapp, guest.name, guest.slug, whatsappMessageTemplate)
     window.open(whatsappUrl, '_blank')
   }
 
