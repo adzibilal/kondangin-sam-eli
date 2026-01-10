@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { ChevronDown, Play, Pause } from 'lucide-react'
+import { ChevronDown, Play, Pause, Loader2 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
 export default function HeroSection() {
@@ -11,7 +11,7 @@ export default function HeroSection() {
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const searchParams = useSearchParams()
-  
+
   // Parse guest slug from URL parameter
   const [guestName, setGuestName] = useState('Nama Tamu')
   const [isLoadingGuest, setIsLoadingGuest] = useState(true)
@@ -20,7 +20,7 @@ export default function HeroSection() {
     const fetchGuestData = async () => {
       try {
         const guestSlug = searchParams.get('guest')
-        
+
         if (!guestSlug) {
           setIsLoadingGuest(false)
           return
@@ -166,9 +166,15 @@ export default function HeroSection() {
                 </p>
               </div>
               <div className="font-public-sans mb-8">
-                <p className="mb-2 text-2xl font-light md:text-3xl">
-                  {guestName}
-                </p>
+                {isLoadingGuest ? (
+                  <div className="mb-2 text-2xl font-light md:text-3xl">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </div>
+                ) : (
+                  <p className="mb-2 text-2xl font-light md:text-3xl">
+                    {guestName}
+                  </p>
+                )}
               </div>
 
               {/* Button */}
