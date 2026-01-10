@@ -6,6 +6,19 @@ import { useSearchParams } from 'next/navigation'
 import { useReactMediaRecorder } from 'react-media-recorder'
 import { WishData } from '@/types'
 
+// Helper function to get supported MIME type for MediaRecorder
+function getMimeType() {
+  if (globalThis.window === undefined) return undefined
+
+  if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+    return 'audio/webm;codecs=opus'
+  }
+  if (MediaRecorder.isTypeSupported('audio/mp4')) {
+    return 'audio/mp4'
+  }
+  return undefined
+}
+
 export default function WishesSectionClient() {
   const searchParams = useSearchParams()
 
@@ -19,7 +32,7 @@ export default function WishesSectionClient() {
     const fetchGuestData = async () => {
       try {
         const guestSlug = searchParams.get('guest')
-        
+
         if (!guestSlug) {
           setIsLoadingGuest(false)
           return
@@ -85,21 +98,21 @@ export default function WishesSectionClient() {
 
   const recordingInterval = useRef<NodeJS.Timeout | null>(null)
 
-  const {
-    status,
-    startRecording,
-    stopRecording,
-    mediaBlobUrl,
-    clearBlobUrl,
-  } = useReactMediaRecorder({
-    audio: true,
-    onStop: async (blobUrl, blob) => {
-      setRecordedBlob(blob)
-      if (recordingInterval.current) {
-        clearInterval(recordingInterval.current)
-      }
-    },
-  })
+  const { status, startRecording, stopRecording, mediaBlobUrl, clearBlobUrl } =
+    useReactMediaRecorder({
+      audio: true,
+      // iOS Safari compatibility - use audio/mp4 or audio/wav as fallback
+      askPermissionOnMount: false,
+      mediaRecorderOptions: {
+        mimeType: getMimeType(),
+      },
+      onStop: (blobUrl, blob) => {
+        setRecordedBlob(blob)
+        if (recordingInterval.current) {
+          clearInterval(recordingInterval.current)
+        }
+      },
+    })
 
   // Fetch wishes on component mount
   useEffect(() => {
@@ -115,7 +128,7 @@ export default function WishesSectionClient() {
       }, 1000)
       return
     }
-    
+
     if (recordingInterval.current) {
       clearInterval(recordingInterval.current)
     }
@@ -134,23 +147,55 @@ export default function WishesSectionClient() {
     voiceWishes.forEach(wish => {
       if (wish.id) {
         const audio = new Audio(wish.audioUrl)
-        
+
+        // iOS compatibility settings
+        audio.setAttribute('playsinline', 'true')
+        audio.setAttribute('webkit-playsinline', 'true')
+        audio.preload = 'metadata'
+
         const handleTimeUpdate = () => {
-          setCurrentTimes(prev => new Map(prev).set(wish.id!, audio.currentTime))
+          setCurrentTimes(prev =>
+            new Map(prev).set(wish.id!, audio.currentTime)
+          )
         }
-        
+
         const handleLoadedMetadata = () => {
-          setDurations(prev => new Map(prev).set(wish.id!, audio.duration))
+          // Ensure duration is valid before setting
+          const isValidDuration =
+            Number.isFinite(audio.duration) && !Number.isNaN(audio.duration)
+          if (isValidDuration) {
+            setDurations(prev => new Map(prev).set(wish.id!, audio.duration))
+          }
         }
-        
+
+        const handleCanPlayThrough = () => {
+          // Additional check when audio can play through
+          const isValidDuration =
+            Number.isFinite(audio.duration) &&
+            !Number.isNaN(audio.duration) &&
+            audio.duration > 0
+          if (isValidDuration) {
+            setDurations(prev => new Map(prev).set(wish.id!, audio.duration))
+          }
+        }
+
         const handleEnded = () => {
           setPlayingId(null)
         }
-        
+
+        const handleError = (e: Event) => {
+          console.error('Audio error for wish', wish.id, e)
+        }
+
         audio.addEventListener('timeupdate', handleTimeUpdate)
         audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+        audio.addEventListener('canplaythrough', handleCanPlayThrough)
         audio.addEventListener('ended', handleEnded)
-        
+        audio.addEventListener('error', handleError)
+
+        // Try to load the audio metadata
+        audio.load()
+
         newAudioElements.set(wish.id, audio)
       }
     })
@@ -188,7 +233,7 @@ export default function WishesSectionClient() {
       stopRecording()
       return
     }
-    
+
     clearBlobUrl()
     setRecordedBlob(null)
     startRecording()
@@ -196,7 +241,7 @@ export default function WishesSectionClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!recordedBlob) {
       setError('Silakan rekam pesan suara terlebih dahulu')
       return
@@ -267,7 +312,7 @@ export default function WishesSectionClient() {
     }
   }
 
-  const togglePlay = (id: string) => {
+  const togglePlay = async (id: string) => {
     const audio = audioElements.get(id)
     if (!audio) return
 
@@ -280,12 +325,24 @@ export default function WishesSectionClient() {
         const currentAudio = audioElements.get(playingId)
         currentAudio?.pause()
       }
-      audio.play()
-      setPlayingId(id)
+
+      // iOS requires promise handling for play()
+      try {
+        await audio.play()
+        setPlayingId(id)
+      } catch (error) {
+        console.error('Error playing audio:', error)
+        setError('Tidak dapat memutar audio. Silakan coba lagi.')
+        setTimeout(() => setError(null), 3000)
+      }
     }
   }
 
   const formatTime = (seconds: number): string => {
+    // Handle NaN, Infinity, or invalid values
+    if (!Number.isFinite(seconds) || Number.isNaN(seconds) || seconds < 0) {
+      return '0:00'
+    }
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
@@ -296,14 +353,23 @@ export default function WishesSectionClient() {
     duration: number,
     fallbackDuration: string
   ): string => {
-    return duration > 0 ? formatTime(duration) : fallbackDuration
+    // Check if duration is valid and greater than 0
+    const isValidDuration =
+      Number.isFinite(duration) && !Number.isNaN(duration) && duration > 0
+    if (isValidDuration) {
+      return formatTime(duration)
+    }
+    // Return fallback duration if it's valid, otherwise return default
+    const isValidFallback = fallbackDuration && fallbackDuration !== 'undefined'
+    return isValidFallback ? fallbackDuration : '0:00'
   }
 
-  const recordButtonText = status === 'recording'
-    ? `Merekam... ${formatTime(recordingTime)}`
-    : recordedBlob
-      ? `Rekaman siap (${formatTime(recordingTime)})`
-      : 'Klik tombol untuk merekam suara'
+  const recordButtonText =
+    status === 'recording'
+      ? `Merekam... ${formatTime(recordingTime)}`
+      : recordedBlob
+        ? `Rekaman siap (${formatTime(recordingTime)})`
+        : 'Klik tombol untuk merekam suara'
 
   return (
     <section className="bg-white px-6 py-12">
@@ -323,91 +389,94 @@ export default function WishesSectionClient() {
           <>
             {/* Success Message */}
             {success && (
-          <div className="mb-6 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-green-700">
-            Ucapan berhasil dikirim! Terima kasih.
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-red-700">
-            {error}
-          </div>
-        )}
-
-        {/* Voice Recording Form */}
-        <div className="mb-8 rounded-xl border-2 border-dashed border-gray-300 bg-white p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name Display */}
-            <div>
-              <p className="mb-2 block text-sm font-medium text-gray-700">
-                Nama
-              </p>
-              <div className="rounded-lg bg-gray-50 px-4 py-3 text-gray-800">
-                {guestName || '#NamaUndangan'}
+              <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+                Ucapan berhasil dikirim! Terima kasih.
               </div>
-            </div>
+            )}
 
-            {/* Voice Recording Message */}
-            <div>
-              <p className="mb-2 block text-sm font-medium text-gray-700">
-                Mohon tinggalkan pesan suara untuk kami
-              </p>
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+                {error}
+              </div>
+            )}
 
-              {/* Recording Button */}
-              <button
-                type="button"
-                onClick={handleRecordClick}
-                disabled={isSubmitting}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors ${
-                  status === 'recording'
-                    ? 'border-red-500 bg-red-50 text-red-700'
-                    : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <span>
-                  {recordButtonText}
-                </span>
-                {status === 'recording' ? (
-                  <Square className="h-5 w-5 text-red-500 fill-red-500" />
-                ) : (
-                  <Mic className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
-
-              {/* Audio Preview */}
-              {mediaBlobUrl && recordedBlob && (
-                <div className="mt-3">
-                  <audio src={mediaBlobUrl} controls className="w-full">
-                    <track kind="captions" />
-                  </audio>
+            {/* Voice Recording Form */}
+            <div className="mb-8 rounded-xl border-2 border-dashed border-gray-300 bg-white p-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Name Display */}
+                <div>
+                  <p className="mb-2 block text-sm font-medium text-gray-700">
+                    Nama
+                  </p>
+                  <div className="rounded-lg bg-gray-50 px-4 py-3 text-gray-800">
+                    {guestName || '#NamaUndangan'}
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={!recordedBlob || isSubmitting}
-              className="w-full rounded-lg bg-gray-800 px-6 py-3 font-medium text-white transition-colors hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isSubmitting && <Loader2 className="h-5 w-5 animate-spin" />}
-              {isSubmitting ? 'Mengirim...' : 'Kirim'}
-              </button>
-            </form>
-          </div>
+                {/* Voice Recording Message */}
+                <div>
+                  <p className="mb-2 block text-sm font-medium text-gray-700">
+                    Mohon tinggalkan pesan suara untuk kami
+                  </p>
+
+                  {/* Recording Button */}
+                  <button
+                    type="button"
+                    onClick={handleRecordClick}
+                    disabled={isSubmitting}
+                    className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors ${
+                      status === 'recording'
+                        ? 'border-red-500 bg-red-50 text-red-700'
+                        : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'
+                    } disabled:cursor-not-allowed disabled:opacity-50`}
+                  >
+                    <span>{recordButtonText}</span>
+                    {status === 'recording' ? (
+                      <Square className="h-5 w-5 fill-red-500 text-red-500" />
+                    ) : (
+                      <Mic className="h-5 w-5 text-gray-400" />
+                    )}
+                  </button>
+
+                  {/* Audio Preview */}
+                  {mediaBlobUrl && recordedBlob && (
+                    <div className="mt-3">
+                      <audio
+                        src={mediaBlobUrl}
+                        controls
+                        className="w-full"
+                        preload="metadata"
+                      >
+                        <track kind="captions" />
+                      </audio>
+                    </div>
+                  )}
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={!recordedBlob || isSubmitting}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-800 px-6 py-3 font-medium text-white transition-colors hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting && <Loader2 className="h-5 w-5 animate-spin" />}
+                  {isSubmitting ? 'Mengirim...' : 'Kirim'}
+                </button>
+              </form>
+            </div>
           </>
         )}
 
         {/* Voice Messages List */}
         <div className="space-y-4">
           {isLoading ? (
-            <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
-              <p className="text-gray-500 mt-2">Memuat ucapan...</p>
+            <div className="py-8 text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-gray-400" />
+              <p className="mt-2 text-gray-500">Memuat ucapan...</p>
             </div>
           ) : voiceWishes.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="py-8 text-center text-gray-500">
               Belum ada ucapan. Jadilah yang pertama!
             </div>
           ) : (
@@ -415,8 +484,15 @@ export default function WishesSectionClient() {
               const wishId = wish.id || ''
               const currentTime = currentTimes.get(wishId) || 0
               const duration = durations.get(wishId) || 0
-              const progress =
-                duration > 0 ? (currentTime / duration) * 100 : 0
+
+              // Safe progress calculation
+              const isDurationValid =
+                Number.isFinite(duration) &&
+                !Number.isNaN(duration) &&
+                duration > 0
+              const progress = isDurationValid
+                ? Math.min(100, Math.max(0, (currentTime / duration) * 100))
+                : 0
               const isPlaying = playingId === wishId
 
               return (
@@ -452,7 +528,8 @@ export default function WishesSectionClient() {
                       <div className="flex justify-between text-xs text-gray-500">
                         <span>{formatTime(currentTime)}</span>
                         <span>
-                          / {getDisplayDuration(wishId, duration, wish.duration)}
+                          /{' '}
+                          {getDisplayDuration(wishId, duration, wish.duration)}
                         </span>
                       </div>
                     </div>
