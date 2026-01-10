@@ -13,9 +13,18 @@ export default function RSVPSection() {
   try {
     const guestParam = searchParams.get('guest')
     if (guestParam) {
-      const guestData = JSON.parse(decodeURIComponent(guestParam))
-      guestName = guestData.name || ''
-      totalGuests = guestData.total_guest?.toString() || '1'
+      const decodedParam = decodeURIComponent(guestParam)
+
+      // Try to parse as JSON first
+      try {
+        const guestData = JSON.parse(decodedParam)
+        guestName = guestData.name || ''
+        totalGuests = guestData.total_guest?.toString() || '1'
+      } catch {
+        // If not JSON, treat as plain string name
+        guestName = decodedParam
+        totalGuests = '1'
+      }
     }
   } catch (error) {
     console.error('Error parsing guest data:', error)
@@ -28,25 +37,51 @@ export default function RSVPSection() {
   })
 
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically send the data to your backend
-    console.log('RSVP Data:', {
-      ...formData,
-      name: guestName || formData.name,
-    })
-    setIsSubmitted(true)
+    setIsLoading(true)
+    setError(null)
 
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setIsSubmitted(false)
-      setFormData({
-        attendance: 'yes',
-        guests: totalGuests,
-        name: guestName,
+    try {
+      const guestParam = searchParams.get('guest') || ''
+
+      const response = await fetch('/api/rsvp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: guestName || formData.name,
+          attendance: formData.attendance,
+          guestCount: Number.parseInt(formData.guests) || 1,
+          guestParam,
+        }),
       })
-    }, 3000)
+
+      if (!response.ok) {
+        throw new Error('Failed to submit RSVP')
+      }
+
+      setIsSubmitted(true)
+
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setIsSubmitted(false)
+        setFormData({
+          attendance: 'yes',
+          guests: totalGuests,
+          name: guestName,
+        })
+      }, 3000)
+    } catch (err) {
+      console.error('Error submitting RSVP:', err)
+      setError('Gagal mengirim konfirmasi. Silakan coba lagi.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -107,11 +142,18 @@ export default function RSVPSection() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+                {error}
+              </div>
+            )}
+
             {/* Konfirmasi Kehadiran */}
             <div>
-              <label className="font-public-sans text-primary mb-3 block font-medium">
+              <div className="font-public-sans text-primary mb-3 block font-medium">
                 Konfirmasi kehadiran
-              </label>
+              </div>
               <div className="space-y-3">
                 <label
                   className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 px-6 py-4 transition-colors ${
@@ -167,9 +209,10 @@ export default function RSVPSection() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="font-public-sans bg-primary hover:bg-primary/90 w-full cursor-pointer rounded-xl px-6 py-4 text-base font-medium text-white transition-colors"
+              disabled={isLoading}
+              className="font-public-sans bg-primary hover:bg-primary/90 w-full cursor-pointer rounded-xl px-6 py-4 text-base font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Konfirmasi
+              {isLoading ? 'Mengirim...' : 'Konfirmasi'}
             </button>
           </form>
         )}

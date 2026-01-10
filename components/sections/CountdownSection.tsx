@@ -28,9 +28,13 @@ export default function CountdownSection() {
     return { days: 0, hours: 0, minutes: 0, seconds: 0 }
   }
 
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>(calculateTimeLeft())
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
+    setTimeLeft(calculateTimeLeft())
+    
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft())
     }, 1000)
@@ -102,29 +106,29 @@ export default function CountdownSection() {
         <div className="mt-20 p-6">
           <div className="mb-8 grid grid-cols-4 gap-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="text-center">
-              <div className="font-public-sans mb-2 text-4xl text-gray-900 md:text-5xl">
-                {timeLeft.days}
+              <div className="font-public-sans mb-2 text-4xl text-gray-900 md:text-5xl" suppressHydrationWarning>
+                {mounted ? timeLeft.days : 0}
               </div>
               <div className="font-public-sans text-gray-600">Hari</div>
             </div>
 
             <div className="text-center">
-              <div className="font-public-sans mb-2 text-4xl text-gray-900 md:text-5xl">
-                {timeLeft.hours}
+              <div className="font-public-sans mb-2 text-4xl text-gray-900 md:text-5xl" suppressHydrationWarning>
+                {mounted ? timeLeft.hours : 0}
               </div>
               <div className="font-public-sans text-gray-600">Jam</div>
             </div>
 
             <div className="text-center">
-              <div className="font-public-sans mb-2 text-4xl text-gray-900 md:text-5xl">
-                {timeLeft.minutes}
+              <div className="font-public-sans mb-2 text-4xl text-gray-900 md:text-5xl" suppressHydrationWarning>
+                {mounted ? timeLeft.minutes : 0}
               </div>
               <div className="font-public-sans text-gray-600">Menit</div>
             </div>
 
             <div className="text-center">
-              <div className="font-public-sans mb-2 text-4xl text-gray-900 md:text-5xl">
-                {timeLeft.seconds}
+              <div className="font-public-sans mb-2 text-4xl text-gray-900 md:text-5xl" suppressHydrationWarning>
+                {mounted ? timeLeft.seconds : 0}
               </div>
               <div className="font-public-sans text-gray-600">Detik</div>
             </div>
