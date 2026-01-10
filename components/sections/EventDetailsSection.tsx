@@ -39,7 +39,20 @@ const eventsDataSession2 = [
 
 // get session from url
 export default function EventDetailsSection() {
-  const session = useSearchParams().get('session')
+  const searchParams = useSearchParams()
+  
+  // Parse guest JSON from URL parameter to get session
+  let session = '2'
+  try {
+    const guestParam = searchParams.get('guest')
+    if (guestParam) {
+      const guestData = JSON.parse(decodeURIComponent(guestParam))
+      session = guestData.session?.toString() || '2'
+    }
+  } catch (error) {
+    console.error('Error parsing guest data:', error)
+  }
+  
   const eventsData = session === '1' ? eventsDataSession1 : eventsDataSession2
 
   return (

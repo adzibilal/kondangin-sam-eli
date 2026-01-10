@@ -6,11 +6,24 @@ import { useSearchParams } from 'next/navigation'
 
 export default function RSVPSection() {
   const searchParams = useSearchParams()
-  const guestName = searchParams.get('guest') || ''
+
+  // Parse guest JSON from URL parameter
+  let guestName = ''
+  let totalGuests = '1'
+  try {
+    const guestParam = searchParams.get('guest')
+    if (guestParam) {
+      const guestData = JSON.parse(decodeURIComponent(guestParam))
+      guestName = guestData.name || ''
+      totalGuests = guestData.total_guest?.toString() || '1'
+    }
+  } catch (error) {
+    console.error('Error parsing guest data:', error)
+  }
 
   const [formData, setFormData] = useState({
     attendance: 'yes',
-    guests: '1',
+    guests: totalGuests,
     name: guestName,
   })
 
@@ -30,7 +43,7 @@ export default function RSVPSection() {
       setIsSubmitted(false)
       setFormData({
         attendance: 'yes',
-        guests: '1',
+        guests: totalGuests,
         name: guestName,
       })
     }, 3000)
@@ -40,18 +53,18 @@ export default function RSVPSection() {
     <section className="relative overflow-hidden bg-white px-6 py-12">
       {/* Background Flower Image */}
       <Image
-        src="/image-5.png"
+        src="/image-7.png"
         alt="Flower decoration"
-        width={300}
-        height={300}
-        className="absolute top-0 -right-10 rotate-180 object-contain opacity-50"
+        width={200}
+        height={200}
+        className="absolute top-0 -right-10 rotate-180 object-contain opacity-30"
       />
       <Image
-        src="/image-5.png"
+        src="/image-7.png"
         alt="Flower decoration"
-        width={300}
-        height={300}
-        className="absolute top-20 -left-20 rotate-90 object-contain opacity-50"
+        width={200}
+        height={200}
+        className="absolute top-20 -left-20 object-contain opacity-30"
       />
 
       <div className="relative mx-auto">
@@ -146,54 +159,11 @@ export default function RSVPSection() {
               </div>
             </div>
 
-            {/* Jumlah Tamu */}
-            <div>
-              <label className="font-public-sans text-primary mb-3 block font-medium">
-                Jumlah tamu
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label
-                  className={`flex cursor-pointer items-center justify-start gap-3 rounded-lg border-2 px-6 py-4 transition-colors ${
-                    formData.guests === '1'
-                      ? 'border-primary bg-gray-50'
-                      : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="guests"
-                    value="1"
-                    checked={formData.guests === '1'}
-                    onChange={e =>
-                      setFormData({ ...formData, guests: e.target.value })
-                    }
-                    className="accent-primary h-5 w-5"
-                  />
-                  <span className="font-public-sans text-primary">1</span>
-                </label>
-
-                <label
-                  className={`flex cursor-pointer items-center justify-start gap-3 rounded-lg border-2 px-6 py-4 transition-colors ${
-                    formData.guests === '2'
-                      ? 'border-primary bg-gray-50'
-                      : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="guests"
-                    value="2"
-                    checked={formData.guests === '2'}
-                    onChange={e =>
-                      setFormData({ ...formData, guests: e.target.value })
-                    }
-                    className="accent-primary h-5 w-5"
-                  />
-                  <span className="font-public-sans text-primary">2</span>
-                </label>
-              </div>
-            </div>
-
+            {totalGuests === '1' && (
+              <p className="font-public-sans text-primary text-center text-sm">
+                Undangan hanya berlaku untuk 1 orang
+              </p>
+            )}
             {/* Submit Button */}
             <button
               type="submit"

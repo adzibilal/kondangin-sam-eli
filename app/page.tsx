@@ -7,6 +7,7 @@ import GiftSection from '@/components/sections/GiftSection'
 import GallerySection from '@/components/sections/GallerySection'
 import RSVPSection from '@/components/sections/RSVPSection'
 import Footer from '@/components/sections/Footer'
+import WishesSection from '@/components/sections/WishesSection'
 
 export default function Home() {
   return (
@@ -27,7 +28,9 @@ export default function Home() {
       </Suspense>
       <GallerySection />
       <GiftSection />
-      {/* <WishesSection /> */}
+      <Suspense fallback={<div>Loading...</div>}>
+        <WishesSection />
+      </Suspense>
       <Footer />
     </main>
   )

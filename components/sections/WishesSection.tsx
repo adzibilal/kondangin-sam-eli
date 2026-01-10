@@ -1,174 +1,186 @@
 'use client'
 
 import React, { useState } from 'react'
+import { Mic, Play, Pause, Volume2 } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 
-interface Wish {
+interface VoiceWish {
   id: number
   name: string
-  message: string
-  attendance: string
+  audioUrl: string
+  duration: string
   date: string
 }
 
 export default function WishesSection() {
-  const [wishes, setWishes] = useState<Wish[]>([
+  const searchParams = useSearchParams()
+
+  // Parse guest JSON from URL parameter
+  let guestName = ''
+  try {
+    const guestParam = searchParams.get('guest')
+    if (guestParam) {
+      const guestData = JSON.parse(decodeURIComponent(guestParam))
+      guestName = guestData.name || ''
+    }
+  } catch (error) {
+    console.error('Error parsing guest data:', error)
+  }
+
+  const [voiceWishes] = useState<VoiceWish[]>([
     {
       id: 1,
-      name: 'John Doe',
-      message:
-        'Congratulations on your special day! Wishing you both a lifetime of love and happiness.',
-      attendance: 'Attending',
+      name: 'Anika Curtis',
+      audioUrl: '/music.mp3',
+      duration: '0:09',
       date: '2024-01-05',
     },
     {
       id: 2,
-      name: 'Jane Smith',
-      message:
-        'So happy for you both! May your marriage be filled with joy and laughter.',
-      attendance: 'Attending',
+      name: 'Cooper Lipshutz',
+      audioUrl: '/music.mp3',
+      duration: '0:09',
       date: '2024-01-04',
+    },
+    {
+      id: 3,
+      name: 'Jakob Schleifer',
+      audioUrl: '/music.mp3',
+      duration: '0:09',
+      date: '2024-01-03',
+    },
+    {
+      id: 4,
+      name: 'Leo Vetrovs',
+      audioUrl: '/music.mp3',
+      duration: '0:09',
+      date: '2024-01-02',
+    },
+    {
+      id: 5,
+      name: 'Leo George',
+      audioUrl: '/music.mp3',
+      duration: '0:09',
+      date: '2024-01-01',
     },
   ])
 
-  const [formData, setFormData] = useState({
-    name: '',
-    message: '',
-    attendance: 'attending',
-  })
+  const [isRecording, setIsRecording] = useState(false)
+  const [playingId, setPlayingId] = useState<number | null>(null)
+
+  const handleRecordClick = () => {
+    setIsRecording(!isRecording)
+    console.log('Recording:', !isRecording)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Submit voice message')
+  }
 
-    const newWish: Wish = {
-      id: wishes.length + 1,
-      name: formData.name,
-      message: formData.message,
-      attendance:
-        formData.attendance === 'attending' ? 'Attending' : 'Not Attending',
-      date: new Date().toISOString().split('T')[0],
+  const togglePlay = (id: number) => {
+    if (playingId === id) {
+      setPlayingId(null)
+    } else {
+      setPlayingId(id)
     }
-
-    setWishes([newWish, ...wishes])
-    setFormData({ name: '', message: '', attendance: 'attending' })
+    console.log('Toggle play:', id)
   }
 
   return (
-    <section className="bg-white px-4 py-20">
-      <div className="mx-auto max-w-4xl">
+    <section className="bg-white px-6 py-12">
+      <div className="mx-auto max-w-lg">
         {/* Section Title */}
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 font-serif text-4xl md:text-5xl">
-            Wishes & Prayers
+        <div className="mb-8">
+          <h2 className="font-lexend-deca mb-2 text-3xl font-semibold text-gray-800">
+            Ucapan & Doa
           </h2>
-          <p className="text-gray-600">
-            Send your best wishes and prayers for the happy couple
-          </p>
         </div>
 
-        {/* Wishes Form */}
-        <div className="mb-12 rounded-lg bg-gray-50 p-6 md:p-8">
+        {/* Voice Recording Form */}
+        <div className="mb-8 rounded-xl border-2 border-dashed border-gray-300 bg-white p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name Display */}
             <div>
-              <label
-                htmlFor="name"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                Your Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                required
-                value={formData.name}
-                onChange={e =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-transparent focus:ring-2 focus:ring-rose-600"
-                placeholder="Enter your name"
-              />
+              <p className="mb-2 block text-sm font-medium text-gray-700">
+                Nama
+              </p>
+              <div className="rounded-lg bg-gray-50 px-4 py-3 text-gray-800">
+                {guestName || '#NamaUndangan'}
+              </div>
             </div>
 
+            {/* Voice Recording Message */}
             <div>
-              <label
-                htmlFor="attendance"
-                className="mb-2 block text-sm font-medium text-gray-700"
+              <p className="mb-2 block text-sm font-medium text-gray-700">
+                Mohon tinggalkan pesan suara untuk kami
+              </p>
+
+              {/* Recording Button */}
+              <button
+                type="button"
+                onClick={handleRecordClick}
+                className="flex w-full items-center justify-between rounded-lg border border-gray-300 bg-white px-4 py-3 text-left text-gray-500 transition-colors hover:bg-gray-50"
               >
-                Attendance *
-              </label>
-              <select
-                id="attendance"
-                required
-                value={formData.attendance}
-                onChange={e =>
-                  setFormData({ ...formData, attendance: e.target.value })
-                }
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-transparent focus:ring-2 focus:ring-rose-600"
-              >
-                <option value="attending">Will Attend</option>
-                <option value="not-attending">Cannot Attend</option>
-              </select>
+                <span>Klik tombol untuk merekam suara</span>
+                <Mic className="h-5 w-5 text-gray-400" />
+              </button>
             </div>
 
-            <div>
-              <label
-                htmlFor="message"
-                className="mb-2 block text-sm font-medium text-gray-700"
-              >
-                Your Message *
-              </label>
-              <textarea
-                id="message"
-                required
-                rows={4}
-                value={formData.message}
-                onChange={e =>
-                  setFormData({ ...formData, message: e.target.value })
-                }
-                className="w-full resize-none rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-transparent focus:ring-2 focus:ring-rose-600"
-                placeholder="Write your wishes and prayers..."
-              />
-            </div>
-
+            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full rounded-lg bg-rose-600 px-6 py-3 font-medium text-white transition-colors hover:bg-rose-700"
+              className="w-full rounded-lg bg-gray-800 px-6 py-3 font-medium text-white transition-colors hover:bg-gray-900"
             >
-              Send Wishes
+              Kirim
             </button>
           </form>
         </div>
 
-        {/* Wishes List */}
-        <div className="space-y-6">
-          <h3 className="mb-6 text-2xl font-semibold">
-            Guest Wishes ({wishes.length})
-          </h3>
+        {/* Voice Messages List */}
+        <div className="space-y-4">
+          {voiceWishes.map(wish => (
+            <div key={wish.id} className="border-b border-gray-200 pb-4">
+              <h3 className="mb-3 font-medium text-gray-800">{wish.name}</h3>
 
-          <div className="max-h-[600px] space-y-4 overflow-y-auto">
-            {wishes.map(wish => (
-              <div
-                key={wish.id}
-                className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-              >
-                <div className="mb-3 flex items-start justify-between">
-                  <div>
-                    <h4 className="font-semibold text-gray-800">{wish.name}</h4>
-                    <p className="text-sm text-gray-500">{wish.date}</p>
+              {/* Audio Player */}
+              <div className="flex items-center gap-3 rounded-lg bg-gray-50 px-4 py-3">
+                <button
+                  onClick={() => togglePlay(wish.id)}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm transition-all hover:shadow-md"
+                >
+                  {playingId === wish.id ? (
+                    <Pause className="h-5 w-5 text-gray-700" />
+                  ) : (
+                    <Play
+                      className="h-5 w-5 text-gray-700"
+                      fill="currentColor"
+                    />
+                  )}
+                </button>
+
+                {/* Progress Bar */}
+                <div className="flex-1">
+                  <div className="mb-1 h-1 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className={`h-full transition-all ${
+                        playingId === wish.id
+                          ? 'w-1/4 bg-red-500'
+                          : 'w-0 bg-gray-400'
+                      }`}
+                    />
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      wish.attendance === 'Attending'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {wish.attendance}
-                  </span>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>{playingId === wish.id ? '0:02' : '0:00'}</span>
+                    <span>/ {wish.duration}</span>
+                  </div>
                 </div>
-                <p className="text-gray-700">{wish.message}</p>
+
+                {/* Volume Icon */}
+                <Volume2 className="h-5 w-5 shrink-0 text-gray-400" />
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

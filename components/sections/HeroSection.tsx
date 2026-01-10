@@ -1,25 +1,98 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Play, Pause } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
 export default function HeroSection() {
   const [showPopup, setShowPopup] = useState(true)
   const [isAnimating, setIsAnimating] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement>(null)
   const searchParams = useSearchParams()
-  const guestName = searchParams.get('guest') || 'Nama Tamu'
+  
+  // Parse guest JSON from URL parameter
+  let guestName = 'Nama Tamu'
+  try {
+    const guestParam = searchParams.get('guest')
+    if (guestParam) {
+      const guestData = JSON.parse(decodeURIComponent(guestParam))
+      guestName = guestData.name || 'Nama Tamu'
+    }
+  } catch (error) {
+    console.error('Error parsing guest data:', error)
+  }
 
   const handleOpenInvitation = () => {
     setIsAnimating(true)
+
+    // Play music
+    if (audioRef.current) {
+      audioRef.current
+        .play()
+        .then(() => {
+          setIsPlaying(true)
+        })
+        .catch(error => {
+          console.log('Auto-play prevented:', error)
+        })
+    }
+
     setTimeout(() => {
       setShowPopup(false)
     }, 800) // Match animation duration
   }
 
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+        setIsPlaying(false)
+      } else {
+        audioRef.current.play()
+        setIsPlaying(true)
+      }
+    }
+  }
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (audio) {
+      const handleEnded = () => {
+        audio.currentTime = 0
+        audio.play()
+      }
+      audio.addEventListener('ended', handleEnded)
+      return () => {
+        audio.removeEventListener('ended', handleEnded)
+      }
+    }
+  }, [])
+
   return (
     <>
+      {/* Audio Element */}
+      <audio ref={audioRef} loop>
+        <source src="/music.mp3" type="audio/mpeg" />
+        Your browser does not support the audio element.
+      </audio>
+
+      {/* Floating Play/Pause Button */}
+      {!showPopup && (
+        <button
+          onClick={toggleMusic}
+          className="bg-primary hover:bg-primary/90 fixed right-6 bottom-6 z-40 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl"
+          aria-label={isPlaying ? 'Pause music' : 'Play music'}
+        >
+          {isPlaying ? (
+            <Pause className="h-6 w-6 text-white" fill="white" />
+          ) : (
+            <Play className="h-6 w-6 text-white" fill="white" />
+          )}
+        </button>
+      )}
+
       {/* Full Screen Popup */}
       {showPopup && (
         <div
