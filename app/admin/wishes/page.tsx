@@ -54,16 +54,16 @@ export default function WishesPage() {
         fetch('/api/admin/wishes'),
         fetch('/api/admin/guests'),
       ])
-      
+
       const wishesData = await wishesRes.json()
       const guestsData = await guestsRes.json()
-      
+
       // Create guest slug to name mapping
       const guestMap = new Map<string, string>()
       guestsData.guests?.forEach((guest: any) => {
         guestMap.set(guest.slug, guest.name)
       })
-      
+
       setGuests(guestMap)
       setWishes(wishesData.wishes || [])
     } catch (error) {
@@ -161,20 +161,24 @@ export default function WishesPage() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="mb-2 text-3xl font-bold text-gray-900">
           Voice Wishes Management
         </h1>
-        <p className="text-gray-700 font-medium">Listen and manage voice wishes from guests</p>
+        <p className="font-medium text-gray-700">
+          Listen and manage voice wishes from guests
+        </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-700 font-medium mb-1">Total Wishes</p>
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <p className="mb-1 text-sm font-medium text-gray-700">Total Wishes</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-700 font-medium mb-1">Total Duration</p>
+        <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <p className="mb-1 text-sm font-medium text-gray-700">
+            Total Duration
+          </p>
           <p className="text-2xl font-bold text-gray-900">
             {formatTotalDuration(stats.totalDuration)}
           </p>
@@ -182,37 +186,37 @@ export default function WishesPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         {isLoading ? (
-          <div className="text-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
-            <p className="text-gray-700 font-medium">Loading wishes...</p>
+          <div className="py-12 text-center">
+            <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-gray-400" />
+            <p className="font-medium text-gray-700">Loading wishes...</p>
           </div>
         ) : wishes.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-700 font-medium">No wishes found</p>
+          <div className="py-12 text-center">
+            <p className="font-medium text-gray-700">No wishes found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="border-b border-gray-200 bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-bold tracking-wider text-gray-700 uppercase">
                     Guest Name (From Table)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-bold tracking-wider text-gray-700 uppercase">
                     Wish Name (Submitted)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-bold tracking-wider text-gray-700 uppercase">
                     Duration
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-bold tracking-wider text-gray-700 uppercase">
                     Created At
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-bold tracking-wider text-gray-700 uppercase">
                     Audio
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-bold tracking-wider text-gray-700 uppercase">
                     Actions
                   </th>
                 </tr>
@@ -222,7 +226,7 @@ export default function WishesPage() {
                   const guestNameFromTable = wish.guestSlug
                     ? guests.get(wish.guestSlug) || 'Unknown'
                     : 'Legacy Entry'
-                  
+
                   return (
                     <tr key={wish.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">
@@ -236,50 +240,51 @@ export default function WishesPage() {
                       <td className="px-6 py-4 text-sm text-gray-700">
                         {wish.name}
                       </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {wish.duration}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {formatDate(wish.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <button
-                        onClick={() => wish.id && togglePlay(wish.id)}
-                        className="flex items-center gap-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                      >
-                        {playingId === wish.id ? (
-                          <>
-                            <Pause className="w-4 h-4" />
-                            <span>Pause</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-4 h-4" fill="currentColor" />
-                            <span>Play</span>
-                          </>
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {wish.duration}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {formatDate(wish.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
                         <button
-                          onClick={() => handleDownload(wish)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Download audio"
+                          onClick={() => wish.id && togglePlay(wish.id)}
+                          className="flex items-center gap-2 rounded-lg bg-blue-100 px-3 py-1 text-blue-900 transition-colors hover:bg-blue-200"
                         >
-                          <Download className="w-4 h-4" />
+                          {playingId === wish.id ? (
+                            <>
+                              <Pause className="h-4 w-4" />
+                              <span>Pause</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4" fill="currentColor" />
+                              <span>Play</span>
+                            </>
+                          )}
                         </button>
-                        <button
-                          onClick={() => handleDeleteClick(wish)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete wish"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )})}
+                      </td>
+                      <td className="px-6 py-4 text-right text-sm">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleDownload(wish)}
+                            className="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50"
+                            title="Download audio"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(wish)}
+                            className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
+                            title="Delete wish"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
